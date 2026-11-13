@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maren's Birthday Karaoke</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jacquard+24&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="control">
+<div class="page">
+  <div class="ticker" aria-hidden="true">
+    <span class="crawl" id="ticker"></span>
+  </div>
+
+  <header class="hero">
+    <div>
+      <h1 class="title">Maren's Birthday Karaoke</h1>
+      <p class="est">est. 1998</p>
+    </div>
+    <figure class="finger">
+      <img src="img/finger-lilac.png" alt="Pixelated anime girl holding up a middle finger">
+      <figcaption>^ 4 the haters ^</figcaption>
+    </figure>
+  </header>
+
+  <div class="box statusbar">
+    <span class="tv-status"><span id="tvDot" class="dot"></span><b id="tvLabel">TV window not open</b></span>
+    <button id="openTv" class="bevel">open TV window</button>
+    <span class="spacer"></span>
+    <span class="counter">songs sung: <span id="counter">000000</span></span>
+  </div>
+
+  <main class="layout">
+    <section class="box search-panel">
+      <h2 class="h-italic">~ search 4 a song ~</h2>
+      <form id="searchForm" class="search-row">
+        <label for="q"><b>song or artist:</b></label>
+        <input id="q" type="text" autocomplete="off" autofocus>
+        <label class="check"><input id="addKaraoke" type="checkbox" checked> add “karaoke”</label>
+        <button class="bevel" type="submit">GO!!</button>
+      </form>
+      <div id="searchStatus" class="note"></div>
+      <div class="scroller">
+        <table class="results" id="resultsTable" hidden>
+          <thead><tr><th>vid</th><th>song</th><th>time</th><th>do it</th></tr></thead>
+          <tbody id="results"></tbody>
+        </table>
+      </div>
+      <p class="note">* if a song won't play here it downloads first. be patient. ur not that busy.</p>
+    </section>
+
+    <aside class="side">
+      <section class="box">
+        <h2 class="h-caps">♪ now playing ♪</h2>
+        <p id="nowTitle" class="now-title muted">nothing yet. pick something!!</p>
+        <div class="ascii-progress" id="progress" title="click to jump around">
+          <span id="progressBar">░░░░░░░░░░░░░░░░░░░░</span>
+          <span id="progressTime">0:00 / 0:00</span>
+        </div>
+        <div class="row">
+          <button id="btnRestart" class="bevel" title="Restart">|◀ again</button>
+          <button id="btnPlayPause" class="bevel" title="Play / pause (Space)">▶ play</button>
+          <button id="btnSkip" class="bevel" title="Next song (N)">skip ▶|</button>
+        </div>
+        <label class="slider">music volume <input id="musicVol" type="range" min="0" max="100" value="80"></label>
+      </section>
+
+      <section class="box">
+        <div class="box-head">
+          <h2 class="h-caps">up next <span id="queueCount"></span></h2>
+          <button id="clearQueue" class="bevel small">clear</button>
+        </div>
+        <ol id="queue" class="queue"></ol>
+        <p id="queueEmpty" class="note">nobody's up. add songs from the search!!</p>
+      </section>
+
+      <section class="box">
+        <div class="box-head">
+          <h2 class="h-caps">mic check 1 2</h2>
+          <button id="micToggle" class="bevel">turn mic ON</button>
+        </div>
+        <p class="ascii-meter" aria-hidden="true"><span id="micMeterOn"></span><span id="micMeterOff">||||||||||||||||||||||||</span></p>
+        <label class="field">input
+          <select id="micInput"><option value="">Default microphone</option></select>
+        </label>
+        <label class="field" id="outputField">output
+          <select id="micOutput"><option value="">Default output</option></select>
+        </label>
+        <label class="slider">mic volume <input id="micVol" type="range" min="0" max="200" value="100"></label>
+        <label class="slider">reverb (cathedral) <input id="micReverb" type="range" min="0" max="100" value="30"></label>
+        <label class="slider">echo echo echo <input id="micEcho" type="range" min="0" max="100" value="10"></label>
+        <p id="micInfo" class="note"></p>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="footer">© Maren 2026 · made with ♡ and spite</footer>
+</div>
+
+<div id="toast" class="toast" role="status"></div>
+<script src="mic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maren's Birthday Karaoke (TV)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jacquard+24&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="tv">
+  <div id="playerWrap"><div id="player"></div></div>
+  <video id="video" playsinline preload="auto"></video>
+
+  <div id="idle" class="idle">
+    <img class="idle-finger" src="img/finger-lilac.png" alt="">
+    <h1 class="title">Maren's Birthday Karaoke</h1>
+    <div id="idleCard" class="idle-card hidden">
+      <div id="idleLabel" class="idle-label">up next</div>
+      <div id="idleBig" class="idle-big"></div>
+      <div id="idleBar" class="idle-bar"></div>
+    </div>
+    <p id="idleTag" class="idle-tag">~*~ pick a song on the laptop ~*~</p>
+  </div>
+
+  <div id="visitors" class="visitors">visitors: 000000</div>
+  <div id="banner" class="banner"></div>
+
+  <div id="startOverlay" class="start-overlay">
+    <div class="start-card">
+      <p><b>drag this window onto the TV, then click anywhere!!</b></p>
+      <p class="muted">(the click lets songs play with sound + goes full screen.<br>press F or double-click to toggle full screen.)</p>
+    </div>
+  </div>
+
+  <script src="tv.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
