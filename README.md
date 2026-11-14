@@ -97,12 +97,12 @@ Shortcuts on the control panel: **Space** plays/pauses, **N** skips.
 
 ## ✧ the song counter
 
-The ticker's "u r visitor #000000", the "songs sung" box and the "visitors" tag on the TV are all the same counter.
+The ticker's "u r visitor #000000", the small "lifetime" line and the "visitors" tag on the TV are all the same lifetime counter.
 It goes up by one each time a song starts playing. Pausing, restarting or reloading the page doesn't count it again.
 It's saved in `data/counter.json`. To set it to a number, stop the server and write e.g. `{"count": 0}` into that
 file. Delete the file to reset it to 0.
 
-Under "songs sung" there's also a smaller **this session** count: songs since you last started `./run.sh`.
+The big "songs sung" box counts this session only (songs since you last started `./run.sh`); the small **lifetime** line under it, the ticker and the TV show the all-time count.
 
 <details>
 <summary><b>✧ maintenance</b></summary>

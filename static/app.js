@@ -214,13 +214,13 @@ function renderNow() {
 // ---------- songs-sung counter (ticks up each time a song starts playing) ----------
 let counter = 0;
 let sessionCount = 0;
-// Lifetime count: ticker + "songs sung" box + TV. Session count (since the server started): under it.
+// Session count (since the server started): the big "songs sung" box. Lifetime: small line under it, ticker, TV.
 function showCounter(n, session = sessionCount) {
   counter = n;
   sessionCount = session;
   const padded = String(n).padStart(6, '0');
-  $('counter').textContent = padded;
-  $('sessionCounter').textContent = session;
+  $('sessionCounter').textContent = String(session).padStart(6, '0'); // big box: this session
+  $('lifetimeCounter').textContent = n;                                // small line under it: all time
   const bit = `~*~ welcome 2 my karaoke page ~*~ u r visitor #${padded} ~*~ no skipping ur friends' songs `;
   $('ticker').textContent = (bit + bit + bit + bit) + '~*~\u00a0';
   send({ type: 'counter', value: n });
