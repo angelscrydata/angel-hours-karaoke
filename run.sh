@@ -2,6 +2,7 @@
 # Start the karaoke machine. First run sets up a local Python environment with yt-dlp.
 #   ./run.sh           start (opens the control panel in your browser)
 #   ./run.sh --update  update yt-dlp first (do this if search stops working)
+#   ./run.sh --title "Jo's Karaoke Night"   use your own title (also: --port, --no-browser)
 set -euo pipefail
 cd "$(dirname "$0")"
 

@@ -12,10 +12,13 @@ Serves the web UI from ./static plus a small API:
     GET /api/counter, POST /api/counter   read / bump the songs-played counter (data/counter.json)
 
 Run with:  ./run.sh   (or .venv/bin/python server.py)
+           ./run.sh --title "Jo's Karaoke Night"   (change the title on both screens)
 """
 
 import argparse
+import html
 import json
+import os
 import re
 import shutil
 import threading
@@ -36,6 +39,12 @@ CACHE_DIR = ROOT / "cache"
 CACHE_MAX_AGE_DAYS = 60
 MAX_RESULTS = 30
 VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+# The title on both screens. The HTML files contain DEFAULT_TITLE; the server swaps in
+# the --title setting (or $KARAOKE_TITLE) when it serves them.
+DEFAULT_TITLE = "Maren's Birthday Karaoke"
+TITLE = DEFAULT_TITLE
+TITLED_PAGES = {"/": "index.html", "/index.html": "index.html", "/tv.html": "tv.html"}
 
 # H.264 first so the file plays in every browser; cap at 720p to keep downloads quick.
 DOWNLOAD_FORMAT = (
@@ -212,7 +221,18 @@ class Handler(SimpleHTTPRequestHandler):
         m = re.fullmatch(r"/media/([A-Za-z0-9_-]{11})\.mp4", url.path)
         if m:
             return self._media(media_path(m.group(1)))
+        if url.path in TITLED_PAGES:
+            return self._titled_page(STATIC_DIR / TITLED_PAGES[url.path])
         return super().do_GET()
+
+    def _titled_page(self, path: Path):
+        page = path.read_text(encoding="utf-8").replace(DEFAULT_TITLE, html.escape(TITLE, quote=False))
+        body = page.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def do_POST(self):
         if urlparse(self.path).path == "/api/counter":
@@ -288,7 +308,15 @@ def main():
     parser = argparse.ArgumentParser(description="Local karaoke machine")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-browser", action="store_true", help="don't open the control panel")
+    parser.add_argument(
+        "--title",
+        default=os.environ.get("KARAOKE_TITLE") or DEFAULT_TITLE,
+        help=f'title shown on both screens (default: "{DEFAULT_TITLE}", or $KARAOKE_TITLE)',
+    )
     args = parser.parse_args()
+
+    global TITLE
+    TITLE = args.title.strip() or DEFAULT_TITLE
 
     clean_cache()
     if not HAVE_FFMPEG:
@@ -296,7 +324,7 @@ def main():
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     server.daemon_threads = True
     url = f"http://localhost:{args.port}/"
-    print(f"Karaoke machine running at {url}  (Ctrl+C to stop)")
+    print(f"{TITLE} running at {url}  (Ctrl+C to stop)")
     if not args.no_browser:
         threading.Timer(0.5, webbrowser.open, args=(url,)).start()
     try:
