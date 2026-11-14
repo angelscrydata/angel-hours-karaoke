@@ -1,4 +1,4 @@
-/* Maren's Birthday Karaoke: "angel hours" theme.
+/* angel hours karaoke: "angel hours" theme.
    Lavender starfield, Jacquard 24 title, Times New Roman everything else, beveled buttons. */
 :root {
   --ink: #241b3a;
@@ -69,6 +69,8 @@ a { color: var(--link); }
 .dot.on { background: #1f9d55; }
 .spacer { flex-grow: 1; }
 .counter { font-family: var(--mono); background: var(--ink); color: #f2eeff; padding: 2px 8px; }
+.counter-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.session-count { font: italic 14px var(--times); }
 
 h2 { margin: 0 0 8px; }
 .h-italic { font-size: 22px; font-style: italic; }
@@ -143,7 +145,7 @@ input[type=range] { accent-color: var(--accent); width: 100%; display: block; }
 }
 
 /* ---------- TV window ---------- */
-body.tv { overflow: hidden; }
+body.tv { overflow: hidden; user-select: none; -webkit-user-select: none; } /* double-click = full screen, not "select word" */
 body.tv #playerWrap, body.tv #player, body.tv iframe, body.tv video { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
 body.tv #playerWrap, body.tv video { background: #000; }
 body.tv video { object-fit: contain; visibility: hidden; }
@@ -168,6 +170,10 @@ body.tv.playing { cursor: none; }
 .idle-bar { font: 2.8vmin var(--mono); color: #3d2f8a; }
 .idle-tag { margin: 0; font: 2.8vmin var(--mono); background: var(--ink); color: #f2eeff; padding: .4vh 1.4vw; }
 .visitors { position: fixed; right: 2vw; bottom: 2vh; font: 2.2vmin var(--mono); background: var(--ink); color: #f2eeff; padding: .2vh .8vw; }
+
+.fs-button { position: fixed; left: 2vw; bottom: 2vh; z-index: 5; transition: opacity .5s; }
+.fs-button.faded { opacity: 0; pointer-events: none; }
+body.tv.playing .fs-button.faded { cursor: none; }
 
 .banner {
   position: fixed; left: 3vw; top: 3vh; max-width: 80vw; padding: 1vmin 2vmin;

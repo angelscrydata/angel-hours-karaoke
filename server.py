@@ -9,7 +9,8 @@ Serves the web UI from ./static plus a small API:
         downloads the video into ./cache in the background and returns
         {"mode": "file", "status": "downloading"|"ready"|"error", "progress": 0..1}.
     GET /media/<videoId>.mp4              a downloaded video (supports seeking)
-    GET /api/counter, POST /api/counter   read / bump the songs-played counter (data/counter.json)
+    GET /api/counter, POST /api/counter   read / bump the songs-played counter: {"count": lifetime
+                                          (data/counter.json), "session": since this server started}
 
 Run with:  ./run.sh   (or .venv/bin/python server.py)
            ./run.sh --title "Jo's Karaoke Night"   (change the title on both screens)
@@ -42,7 +43,7 @@ VIDEO_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
 # The title on both screens. The HTML files contain DEFAULT_TITLE; the server swaps in
 # the --title setting (or $KARAOKE_TITLE) when it serves them.
-DEFAULT_TITLE = "Maren's Birthday Karaoke"
+DEFAULT_TITLE = "angel hours karaoke"
 TITLE = DEFAULT_TITLE
 TITLED_PAGES = {"/": "index.html", "/index.html": "index.html", "/tv.html": "tv.html"}
 
@@ -166,6 +167,7 @@ def prepare(video_id: str, force_file: bool) -> dict:
 COUNTER_FILE = ROOT / "data" / "counter.json"
 COUNTER_START = 0
 _counter_lock = threading.Lock()
+_session_count = 0  # songs since this server started; resets each time you run it
 
 
 def read_counter() -> int:
@@ -175,14 +177,20 @@ def read_counter() -> int:
         return COUNTER_START
 
 
-def bump_counter() -> int:
+def counter_status() -> dict:
+    return {"count": read_counter(), "session": _session_count}
+
+
+def bump_counter() -> dict:
+    global _session_count
     with _counter_lock:
         count = read_counter() + 1
         COUNTER_FILE.parent.mkdir(exist_ok=True)
         tmp = COUNTER_FILE.with_suffix(".tmp")
         tmp.write_text(json.dumps({"count": count}))
         tmp.replace(COUNTER_FILE)
-        return count
+        _session_count += 1
+        return {"count": count, "session": _session_count}
 
 
 def clean_cache():
@@ -217,7 +225,7 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(400, {"error": "bad id"})
             return self._json(200, prepare(vid, force_file=(params.get("force") or [""])[0] == "file"))
         if url.path == "/api/counter":
-            return self._json(200, {"count": read_counter()})
+            return self._json(200, counter_status())
         m = re.fullmatch(r"/media/([A-Za-z0-9_-]{11})\.mp4", url.path)
         if m:
             return self._media(media_path(m.group(1)))
@@ -236,7 +244,7 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         if urlparse(self.path).path == "/api/counter":
-            return self._json(200, {"count": bump_counter()})
+            return self._json(200, bump_counter())
         self.send_error(404)
 
     def _search(self, params):

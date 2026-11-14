@@ -1,4 +1,4 @@
-// Microphone passthrough: mic -> volume -> (dry + reverb + echo) -> limiter -> speakers.
+// Microphone passthrough: mic -> volume -> (dry + reverb + echo) -> soft clipper -> speakers.
 // Runs in the control panel window. Uses the Web Audio API with low-latency settings.
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -8,6 +8,10 @@
   const savePrefs = () => { try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch {} };
 
   let ctx = null, stream = null, nodes = null, meterRaf = 0;
+
+  // The output chosen here is also where the songs play (app.js forwards it to the TV window).
+  window.karaokeAudio = { get output() { return prefs.output; } };
+  const announceOutput = () => window.dispatchEvent(new CustomEvent('karaoke-output', { detail: prefs.output }));
 
   // Synthetic room reverb: decaying stereo noise.
   function impulse(ctx, seconds = 2.2, decay = 3) {
@@ -29,8 +33,18 @@
     nodes.feedback.gain.setTargetAtTime((prefs.echo / 100) * 0.45, t, 0.05);
   }
 
+  // Soft clipper used as the limiter: untouched below 0.7, rounds off peaks above it, never past 1.0.
+  // Unlike DynamicsCompressorNode (which looks ~6 ms ahead), it adds no delay.
+  function softClipCurve(n = 2048, knee = 0.7) {
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = (i / (n - 1)) * 2 - 1, a = Math.abs(x);
+      curve[i] = a <= knee ? x : Math.sign(x) * (knee + (1 - knee) * Math.tanh((a - knee) / (1 - knee)));
+    }
+    return curve;
+  }
+
   async function start() {
-    ctx = new AudioContext({ latencyHint: 0 });
     stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         deviceId: prefs.input ? { exact: prefs.input } : undefined,
@@ -39,6 +53,7 @@
         latency: 0, channelCount: 1,
       },
     });
+    ctx = new AudioContext({ latencyHint: 0 });
     const src = ctx.createMediaStreamSource(stream);
     const input = ctx.createGain();
     const master = ctx.createGain();
@@ -49,8 +64,9 @@
     delay.delayTime.value = 0.28;
     const feedback = ctx.createGain();
     const echo = ctx.createGain();
-    const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -6; limiter.ratio.value = 12; limiter.attack.value = 0.003; limiter.release.value = 0.15;
+    const limiter = ctx.createWaveShaper();
+    limiter.curve = softClipCurve();
+    limiter.oversample = 'none';
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
 
@@ -68,8 +84,15 @@
     meter();
     await listDevices();
     const ms = Math.round(((ctx.baseLatency || 0) + (ctx.outputLatency || 0)) * 1000);
-    const label = stream.getAudioTracks()[0]?.label || 'microphone';
-    $('micInfo').textContent = `Using ${label}${ms ? ` · ~${ms} ms output latency` : ''}. Use headphones or a wired speaker; Bluetooth and AirPlay add delay.`;
+    const track = stream.getAudioTracks()[0];
+    const label = track?.label || 'microphone';
+    // A mic and speaker running at different sample rates make the browser convert between them,
+    // which adds delay. macOS Audio MIDI Setup can set both to the same rate (48 kHz is typical).
+    const micRate = track?.getSettings?.().sampleRate;
+    const rateNote = micRate && micRate !== ctx.sampleRate
+      ? ` Your mic runs at ${micRate / 1000} kHz but the speaker at ${ctx.sampleRate / 1000} kHz: set both to the same rate in Audio MIDI Setup to cut a bit more delay.`
+      : '';
+    $('micInfo').textContent = `Using ${label}${ms ? ` · ~${ms} ms output latency` : ''}. Use a wired speaker; Bluetooth, AirPlay and TV speakers add delay.${rateNote}`;
     $('micToggle').textContent = 'turn mic OFF';
   }
 
@@ -120,6 +143,9 @@
     };
     fill($('micInput'), 'audioinput', prefs.input, 'Default microphone');
     fill($('micOutput'), 'audiooutput', prefs.output, 'Default output');
+    if (prefs.output && !$('micOutput').value) { // the saved speaker was unplugged
+      prefs.output = ''; savePrefs(); announceOutput();
+    }
   }
 
   if (typeof AudioContext === 'undefined' || !('setSinkId' in AudioContext.prototype)) {
@@ -140,6 +166,7 @@
   });
   $('micOutput').addEventListener('change', (e) => {
     prefs.output = e.target.value; savePrefs(); setOutput(prefs.output);
+    announceOutput();
   });
   for (const [id, key] of [['micVol', 'vol'], ['micReverb', 'reverb'], ['micEcho', 'echo']]) {
     $(id).value = prefs[key];

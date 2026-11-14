@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Maren's Birthday Karaoke</title>
+  <title>angel hours karaoke</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jacquard+24&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
 
   <header class="hero">
     <div>
-      <h1 class="title">Maren's Birthday Karaoke</h1>
+      <h1 class="title">angel hours karaoke</h1>
       <p class="est">est. 1998</p>
     </div>
     <figure class="finger">
@@ -29,8 +29,12 @@
   <div class="box statusbar">
     <span class="tv-status"><span id="tvDot" class="dot"></span><b id="tvLabel">TV window not open</b></span>
     <button id="openTv" class="bevel">open TV window</button>
+    <button id="fsControl" class="bevel">⛶ full screen</button>
     <span class="spacer"></span>
-    <span class="counter">songs sung: <span id="counter">000000</span></span>
+    <span class="counter-stack">
+      <span class="counter">songs sung: <span id="counter">000000</span></span>
+      <span class="session-count">this session: <span id="sessionCounter">0</span></span>
+    </span>
   </div>
 
   <main class="layout">

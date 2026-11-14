@@ -90,7 +90,12 @@ $('results').addEventListener('click', (e) => {
 });
 
 // ---------- preparing videos (embed vs. download) ----------
+// The YouTube embed always plays through the Mac's default output; only a downloaded file can be
+// sent to a chosen speaker. So when the mic panel picks an output, every song is downloaded.
+const audioOutput = () => window.karaokeAudio?.output || '';
+
 async function prepare(id, force = false) {
+  force = force || !!audioOutput();
   try {
     const r = await fetch(`/api/prepare?id=${id}${force ? '&force=file' : ''}`);
     prep[id] = await r.json();
@@ -120,9 +125,14 @@ function sendCurrent() {
   const p = prep[item.id];
   if (!p) return; // still checking; onPrepUpdate will call us again
   const base = { type: 'load', video: item, upNext: upNext() };
+  // Switching a song that's already playing (embed -> file): pick up where it was.
+  const sameSong = tv.videoId === item.id && tv.time > 0;
   if (p.mode === 'embed') return send({ ...base, mode: 'embed' });
-  if (p.status === 'ready') return send({ ...base, mode: 'file', src: `/media/${item.id}.mp4` });
-  if (p.status === 'downloading') return send({ ...base, mode: 'wait', progress: p.progress });
+  if (p.status === 'ready') return send({ ...base, mode: 'file', src: `/media/${item.id}.mp4`, start: sameSong ? tv.time : 0 });
+  if (p.status === 'downloading') {
+    if (sameSong && tv.playing) return; // keep singing over the embed until the file is ready
+    return send({ ...base, mode: 'wait', progress: p.progress });
+  }
   toast(`Couldn’t get “${item.title}”: ${p.error || 'download failed'}. Skipping.`);
   next();
 }
@@ -203,19 +213,23 @@ function renderNow() {
 
 // ---------- songs-sung counter (ticks up each time a song starts playing) ----------
 let counter = 0;
-function showCounter(n) {
+let sessionCount = 0;
+// Lifetime count: ticker + "songs sung" box + TV. Session count (since the server started): under it.
+function showCounter(n, session = sessionCount) {
   counter = n;
+  sessionCount = session;
   const padded = String(n).padStart(6, '0');
   $('counter').textContent = padded;
+  $('sessionCounter').textContent = session;
   const bit = `~*~ welcome 2 my karaoke page ~*~ u r visitor #${padded} ~*~ no skipping ur friends' songs `;
-  $('ticker').textContent = (bit + bit + bit + bit) + '~*~ ';
+  $('ticker').textContent = (bit + bit + bit + bit) + '~*~\u00a0';
   send({ type: 'counter', value: n });
 }
 async function loadCounter() {
-  try { showCounter((await (await fetch('/api/counter')).json()).count); } catch { showCounter(counter); }
+  try { const d = await (await fetch('/api/counter')).json(); showCounter(d.count, d.session ?? 0); } catch { showCounter(counter); }
 }
 async function bumpCounter() {
-  try { showCounter((await (await fetch('/api/counter', { method: 'POST' })).json()).count); } catch {}
+  try { const d = await (await fetch('/api/counter', { method: 'POST' })).json(); showCounter(d.count, d.session ?? sessionCount + 1); } catch {}
 }
 
 function changed() {
@@ -263,6 +277,7 @@ chan.onmessage = ({ data: m }) => {
       tv.lastSeen = Date.now();
       send({ type: 'volume', value: state.musicVol });
       send({ type: 'counter', value: counter });
+      send({ type: 'output', deviceId: audioOutput() });
       if (state.current) sendCurrent();
       else send({ type: 'upnext', title: upNext() });
       break;
@@ -278,6 +293,9 @@ chan.onmessage = ({ data: m }) => {
       break;
     case 'ended':
       if (state.current && m.videoId === state.current.id) next();
+      break;
+    case 'sinkError':
+      toast(`Couldn’t send the music to that speaker (${m.message}). It's playing on the default output.`);
       break;
     case 'error': {
       const cur = state.current;
@@ -303,6 +321,24 @@ setInterval(() => {
     : tv.unlocked ? 'TV connected!!' : 'TV open: click it once 2 start';
   $('openTv').textContent = alive ? 'go 2 TV window' : 'open TV window';
 }, 500);
+
+// Full screen for the control panel itself.
+$('fsControl').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+});
+document.addEventListener('fullscreenchange', () => {
+  $('fsControl').textContent = document.fullscreenElement ? '⛶ exit full screen' : '⛶ full screen';
+});
+
+// Mic panel picked a different output: move the music there too.
+window.addEventListener('karaoke-output', () => {
+  send({ type: 'output', deviceId: audioOutput() });
+  if (!audioOutput()) return;
+  for (const id of new Set([state.current?.id, ...state.queue.map((q) => q.id)])) {
+    if (id && prep[id]?.mode === 'embed') prepare(id, true);
+  }
+});
 
 // ---------- start ----------
 restore();

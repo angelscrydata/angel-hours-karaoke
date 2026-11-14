@@ -90,7 +90,7 @@ Shortcuts on the control panel: **Space** plays/pauses, **N** skips.
 
 ## ✧ make it yours
 
-- **Title:** `./run.sh --title "..."` changes it on both screens and the browser tabs. To keep one without typing
+- **Title:** it says "angel hours karaoke" unless you give it your own with `./run.sh --title "..."`, which changes it on both screens and the browser tabs. To keep one without typing
   it every time, add `export KARAOKE_TITLE="Jo's Karaoke Night"` to your shell profile.
 - **Picture:** replace `static/img/finger-lilac.png` (it's shown about 3:1, wide and short).
 - **Colors and fonts:** at the top of `static/style.css`.
@@ -101,6 +101,8 @@ The ticker's "u r visitor #000000", the "songs sung" box and the "visitors" tag 
 It goes up by one each time a song starts playing. Pausing, restarting or reloading the page doesn't count it again.
 It's saved in `data/counter.json`. To set it to a number, stop the server and write e.g. `{"count": 0}` into that
 file. Delete the file to reset it to 0.
+
+Under "songs sung" there's also a smaller **this session** count: songs since you last started `./run.sh`.
 
 <details>
 <summary><b>✧ maintenance</b></summary>

@@ -82,6 +82,18 @@ video.addEventListener('ended', () => { if (active === 'file') send({ type: 'end
 video.addEventListener('playing', () => { if (active === 'file') showPlayer('file'); });
 video.addEventListener('error', () => { if (active === 'file') send({ type: 'error', videoId: currentId, code: 'file' }); });
 
+// Play downloaded songs through the same speaker the mic uses (chosen on the control panel).
+let outputId = '';
+async function setOutput(id) {
+  if (id === outputId || typeof video.setSinkId !== 'function') return;
+  try {
+    await video.setSinkId(id);
+    outputId = id;
+  } catch (e) {
+    send({ type: 'sinkError', message: e.message || e.name });
+  }
+}
+
 function stopAll() {
   if (ytReady) yt.stopVideo();
   video.pause();
@@ -109,6 +121,7 @@ function load(msg) {
     active = 'file';
     video.src = msg.src;
     video.volume = volume / 100;
+    if (msg.start > 1) video.addEventListener('loadedmetadata', () => { video.currentTime = msg.start; }, { once: true });
     video.play().catch(() => {});
   } else {
     active = 'yt';
@@ -145,6 +158,7 @@ chan.onmessage = ({ data: m }) => {
       upNextTitle = m.title || '';
       if ($('idle').style.display !== 'none' && !(active === null && currentId)) showIdle();
       break;
+    case 'output': setOutput(m.deviceId || ''); break;
     case 'counter':
       $('visitors').textContent = `visitors: ${String(m.value).padStart(6, '0')}`;
       break;
@@ -179,6 +193,24 @@ $('startOverlay').addEventListener('click', () => {
   flushPending();
 });
 document.addEventListener('dblclick', toggleFullscreen);
+
+// Full screen button: always shown in a window; in full screen it appears when the mouse moves
+// and fades after a moment. (Mouse moves over the YouTube player don't reach this page, so while
+// an embedded video plays in full screen, use Esc or F instead.)
+const fsButton = $('fsButton');
+let fsHideTimer;
+function updateFsButton() {
+  const full = !!document.fullscreenElement;
+  fsButton.textContent = full ? '⛶ exit full screen' : '⛶ full screen';
+  clearTimeout(fsHideTimer);
+  fsButton.classList.remove('faded');
+  if (full) fsHideTimer = setTimeout(() => fsButton.classList.add('faded'), 2500);
+}
+fsButton.addEventListener('click', toggleFullscreen);
+fsButton.addEventListener('dblclick', (e) => e.stopPropagation());
+document.addEventListener('fullscreenchange', updateFsButton);
+document.addEventListener('mousemove', updateFsButton);
+updateFsButton();
 document.addEventListener('keydown', (e) => { if (e.key === 'f' || e.key === 'F') toggleFullscreen(); });
 
 showIdle();
