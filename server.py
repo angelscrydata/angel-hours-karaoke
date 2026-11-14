@@ -142,8 +142,21 @@ def _download(video_id: str):
             job.update(status="ready", progress=1.0)
             print(f"downloaded {video_id}")
         except Exception as exc:
-            job.update(status="error", error=str(exc).splitlines()[0][:300])
+            job.update(status="error", error=friendly_error(str(exc)), failed_at=time.time())
             print(f"download failed {video_id}: {exc}")
+
+
+RETRY_AFTER_S = 120
+
+
+def friendly_error(msg: str) -> str:
+    first = msg.splitlines()[0]
+    low = first.lower()
+    if "not available" in low or "unavailable" in low or "private" in low or "removed" in low:
+        return "YouTube says this video isn't available (blocked here, private or removed)"
+    if "sign in" in low or "age" in low:
+        return "YouTube wants a sign-in for this one (age-restricted)"
+    return re.sub(r"^ERROR:\s*(\[\w+\]\s*[\w-]+:\s*)?", "", first)[:200]
 
 
 def prepare(video_id: str, force_file: bool) -> dict:
@@ -153,7 +166,11 @@ def prepare(video_id: str, force_file: bool) -> dict:
         return {"mode": "embed"}
     with _jobs_lock:
         job = _jobs.get(video_id)
-        if job is None or job["status"] == "error" and force_file:
+        # A failed download is reported as failed, not restarted on every status check (that made
+        # unavailable videos look stuck at "downloading 0%"). Retry only after a cool-down, in case
+        # it was a network blip.
+        retry = job is not None and job["status"] == "error" and time.time() - job.get("failed_at", 0) > RETRY_AFTER_S
+        if job is None or retry:
             job = _jobs[video_id] = {"status": "downloading", "progress": 0.0}
             threading.Thread(target=_download, args=(video_id,), daemon=True).start()
     out = {"mode": "file", "status": job["status"], "progress": round(job["progress"], 3)}

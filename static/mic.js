@@ -142,6 +142,14 @@
       sel.value = list.some((d) => d.deviceId === chosen) ? chosen : '';
     };
     fill($('micInput'), 'audioinput', prefs.input, 'Default microphone');
+    // Saved mic not connected: keep it listed (and selected) so the menu matches what "mic ON" will try.
+    if (prefs.input && $('micInput').value !== prefs.input) {
+      const opt = document.createElement('option');
+      opt.value = prefs.input;
+      opt.textContent = `${prefs.inputLabel || 'saved mic'} (not connected)`;
+      $('micInput').appendChild(opt);
+      $('micInput').value = prefs.input;
+    }
     fill($('micOutput'), 'audiooutput', prefs.output, 'Default output');
     if (prefs.output && !$('micOutput').value) { // the saved speaker was unplugged
       prefs.output = ''; savePrefs(); announceOutput();
@@ -152,16 +160,39 @@
     $('outputField').style.display = 'none'; // browser can't pick an output; system default is used
   }
 
+  // Turn a getUserMedia failure into something a person at a party can act on.
+  function micError(e) {
+    const saved = prefs.inputLabel ? `“${prefs.inputLabel}”` : 'the mic you picked last time';
+    switch (e.name) {
+      case 'OverconstrainedError': // the saved mic's ID isn't connected (browsers give no message for this)
+        return `Can't find ${saved}. Is it plugged in? Some ports don't power mics well, so try another USB port, or pick a different mic under input and turn the mic ON again.`;
+      case 'NotFoundError':
+        return "No microphone found. Plug one in, then turn the mic ON again.";
+      case 'NotAllowedError':
+      case 'SecurityError':
+        return "The browser isn't allowed to use the mic. Allow it in the address bar's site settings, and check System Settings → Privacy & Security → Microphone.";
+      case 'NotReadableError':
+      case 'AbortError':
+        return "The mic is busy or stopped responding. Close other apps using it (Zoom, FaceTime…), or unplug it and plug it back in.";
+      default:
+        return `Couldn't open the microphone (${[e.name, e.message].filter(Boolean).join(': ') || 'unknown error'}).`;
+    }
+  }
+
   $('micToggle').addEventListener('click', async () => {
     if (ctx) return stop();
     try { await start(); }
     catch (e) {
       stop();
-      $('micInfo').textContent = `Couldn't open the microphone: ${e.message}. Check that the browser has microphone permission (System Settings → Privacy & Security → Microphone).`;
+      $('micInfo').textContent = micError(e);
+      // Fill the input/output menus so another mic can be picked (works once permission was granted before).
+      try { await listDevices(); } catch {}
     }
   });
   $('micInput').addEventListener('change', async (e) => {
-    prefs.input = e.target.value; savePrefs();
+    prefs.input = e.target.value;
+    prefs.inputLabel = e.target.value ? e.target.selectedOptions[0]?.textContent || '' : '';
+    savePrefs();
     if (ctx) { stop(); await start(); }
   });
   $('micOutput').addEventListener('change', (e) => {
@@ -172,5 +203,8 @@
     $(id).value = prefs[key];
     $(id).addEventListener('input', (e) => { prefs[key] = +e.target.value; savePrefs(); applyLevels(); });
   }
-  navigator.mediaDevices?.addEventListener?.('devicechange', () => ctx && listDevices());
+  // Mic plugged in or out: refresh the menus (also after a failed start, so a replugged mic shows up).
+  navigator.mediaDevices?.addEventListener?.('devicechange', () => {
+    if (ctx || $('micInput').options.length > 1) listDevices().catch(() => {});
+  });
 })();
