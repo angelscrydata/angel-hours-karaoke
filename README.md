@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/python-3-b9a8ff?style=flat-square&labelColor=241b3a" alt="Python 3">
   <img src="https://img.shields.io/badge/API%20keys-none-b9a8ff?style=flat-square&labelColor=241b3a" alt="no API keys">
   <img src="https://img.shields.io/badge/ads-zero-b9a8ff?style=flat-square&labelColor=241b3a" alt="zero ads">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-b9a8ff?style=flat-square&labelColor=241b3a" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/vibes-angelic-b9a8ff?style=flat-square&labelColor=241b3a" alt="vibes: angelic">
 </p>
 
@@ -137,5 +138,5 @@ Inspired by [YToke](https://github.com/YuantongL/YToke), whose backend is down a
 <p align="center">· ˚ ✧ ˚ · ♡ · ˚ ✧ ˚ ·</p>
 
 <p align="center">
-  <sub>made with ♡ by <a href="https://www.angelscrydata.com/">angelscrydata</a> · est. 1998</sub>
+  <sub>made with ♡ by <a href="https://www.angelscrydata.com/">angelscrydata</a> · est. 1998 · <a href="LICENSE">MIT license</a></sub>
 </p>
