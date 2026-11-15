@@ -15,6 +15,7 @@
   --times: "Times New Roman", Times, serif;
   --mono: "Courier New", Courier, monospace;
   --title: "Jacquard 24", "Times New Roman", serif;
+  --control-zoom: 1.25; /* the control panel is drawn at 125% (like browser zoom); 1 = normal size */
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -24,6 +25,7 @@ body {
   font: 16px/1.35 var(--times);
   min-height: 100vh;
 }
+body.control { zoom: var(--control-zoom); min-height: calc(100vh / var(--control-zoom)); }
 .stars, body.control, body.tv {
   background-color: var(--lav);
   background-image: radial-gradient(#ffffff 1px, transparent 1.6px), radial-gradient(#efe9ff 1px, transparent 1.4px);
